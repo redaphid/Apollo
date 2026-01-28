@@ -878,4 +878,47 @@ namespace platf {
   bool
   set_clipboard(const std::string& content);
 
+  // MIDI device info
+  struct midi_device_info_t {
+    int id;
+    std::string name;
+  };
+
+  /**
+   * @brief Initialize the MIDI subsystem.
+   * @return 0 on success, non-zero on failure.
+   */
+  int midi_init();
+
+  /**
+   * @brief Cleanup the MIDI subsystem.
+   */
+  void midi_deinit();
+
+  /**
+   * @brief List available MIDI output devices.
+   * @return Vector of MIDI device info.
+   */
+  std::vector<midi_device_info_t> midi_list_devices();
+
+  /**
+   * @brief Open a MIDI output device.
+   * @param device_name The device name or "auto" for first available.
+   * @return 0 on success, non-zero on failure.
+   */
+  int midi_open(const std::string &device_name);
+
+  /**
+   * @brief Close the MIDI output device.
+   */
+  void midi_close();
+
+  /**
+   * @brief Send a MIDI message.
+   * @param data The MIDI message data.
+   * @param length The length of the message.
+   * @return 0 on success, non-zero on failure.
+   */
+  int midi_send(const uint8_t *data, size_t length);
+
 }  // namespace platf

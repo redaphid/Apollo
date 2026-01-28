@@ -18,6 +18,7 @@ namespace input {
   void print(void *input);
   void reset(std::shared_ptr<input_t> &input);
   void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data, const crypto::PERM& permission);
+  void passthrough_midi(std::shared_ptr<input_t> &input, const std::string_view &payload);
 
   [[nodiscard]] std::unique_ptr<platf::deinit_t> init();
 

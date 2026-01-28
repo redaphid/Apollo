@@ -215,6 +215,9 @@ namespace config {
 
     bool enable_input_only_mode;
     bool forward_rumble;
+
+    bool midi;  // Enable MIDI input passthrough
+    std::string midi_device;  // MIDI device name or "auto" for first available
   };
 
   namespace flag {

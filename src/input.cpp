@@ -1706,4 +1706,45 @@ namespace input {
 
     return input;
   }
+
+#pragma pack(push, 1)
+  /**
+   * @brief MIDI packet structure for receiving MIDI data from clients.
+   */
+  struct midi_packet_t {
+    uint8_t device_index;    // Which MIDI output device (0 = default)
+    uint8_t message_length;  // 1-3 bytes for standard MIDI, more for sysex
+    uint8_t data[3];         // MIDI message (status, data1, data2)
+  };
+#pragma pack(pop)
+
+  /**
+   * @brief Called to pass a MIDI message to the platform backend.
+   * @param input The input context pointer.
+   * @param payload The MIDI packet payload.
+   */
+  void passthrough_midi(std::shared_ptr<input_t> &input, const std::string_view &payload) {
+    if (!config::input.midi) {
+      return;
+    }
+
+    if (payload.size() < sizeof(midi_packet_t)) {
+      BOOST_LOG(warning) << "MIDI packet too small: "sv << payload.size();
+      return;
+    }
+
+    auto packet = (const midi_packet_t *) payload.data();
+
+    if (packet->message_length == 0 || packet->message_length > 3) {
+      BOOST_LOG(warning) << "Invalid MIDI message length: "sv << (int) packet->message_length;
+      return;
+    }
+
+    BOOST_LOG(debug) << "MIDI: status=0x"sv << std::hex << (int) packet->data[0]
+                     << " data1=0x"sv << (int) packet->data[1]
+                     << " data2=0x"sv << (int) packet->data[2]
+                     << " len="sv << std::dec << (int) packet->message_length;
+
+    platf::midi_send(packet->data, packet->message_length);
+  }
 }  // namespace input

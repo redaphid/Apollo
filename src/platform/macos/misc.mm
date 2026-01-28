@@ -82,7 +82,19 @@ namespace platf {
 #pragma clang diagnostic pop
     // Record that we determined that we have the screen capture permission.
     screen_capture_allowed = true;
-    return std::make_unique<deinit_t>();
+
+    // Initialize MIDI subsystem
+    midi_init();
+
+    // Create a custom deinit that will clean up MIDI
+    class platform_deinit_t: public deinit_t {
+    public:
+      ~platform_deinit_t() override {
+        midi_deinit();
+      }
+    };
+
+    return std::make_unique<platform_deinit_t>();
   }
 
   fs::path appdata() {

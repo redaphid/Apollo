@@ -1176,6 +1176,20 @@ namespace platf {
     return control;
   }
 
+  class platform_deinit_t: public deinit_t {
+  public:
+    platform_deinit_t(std::unique_ptr<deinit_t> co_init):
+        co_init(std::move(co_init)) {
+    }
+
+    ~platform_deinit_t() override {
+      midi_deinit();
+    }
+
+  private:
+    std::unique_ptr<deinit_t> co_init;
+  };
+
   std::unique_ptr<deinit_t> init() {
     if (dxgi::init()) {
       return nullptr;
@@ -1191,6 +1205,9 @@ namespace platf {
       audio_ctrl.reset_default_device();
     }
 
-    return co_init;
+    // Initialize MIDI subsystem
+    midi_init();
+
+    return std::make_unique<platform_deinit_t>(std::move(co_init));
   }
 }  // namespace platf

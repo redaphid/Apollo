@@ -53,6 +53,7 @@ extern "C" {
 #define IDX_SET_CLIPBOARD 16
 #define IDX_FILE_TRANSFER_NONCE_REQUEST 17
 #define IDX_SET_ADAPTIVE_TRIGGERS 18
+#define IDX_MIDI_DATA 19
 
 static const short packetTypes[] = {
   0x0305,  // Start A
@@ -74,6 +75,7 @@ static const short packetTypes[] = {
   0x3001,  // Set Clipboard (Apollo protocol extension)
   0x3002,  // File transfer nonce request (Apollo protocol extension)
   0x5503,  // Set Adaptive triggers (Sunshine protocol extension)
+  0x3003,  // MIDI data (Apollo protocol extension)
 };
 
 namespace asio = boost::asio;
@@ -1050,6 +1052,12 @@ namespace stream {
         BOOST_LOG(debug) << "Permission File Upload deined for [" << session->device_name << "]";
         return;
       }
+    });
+
+    server->map(packetTypes[IDX_MIDI_DATA], [&](session_t *session, const std::string_view &payload) {
+      BOOST_LOG(debug) << "type [IDX_MIDI_DATA]"sv;
+
+      input::passthrough_midi(session->input, payload);
     });
 
     server->map(packetTypes[IDX_ENCRYPTED], [server](session_t *session, const std::string_view &payload) {

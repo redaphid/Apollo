@@ -1045,7 +1045,18 @@ std::string get_local_ip_for_gateway() {
       BOOST_LOG(warning) << "Couldn't load EGL library"sv;
     }
 
-    return std::make_unique<deinit_t>();
+    // Initialize MIDI subsystem
+    midi_init();
+
+    // Create a custom deinit that will clean up MIDI
+    class platform_deinit_t: public deinit_t {
+    public:
+      ~platform_deinit_t() override {
+        midi_deinit();
+      }
+    };
+
+    return std::make_unique<platform_deinit_t>();
   }
 
   class linux_high_precision_timer: public high_precision_timer {

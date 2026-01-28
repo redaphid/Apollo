@@ -576,6 +576,8 @@ namespace config {
     true,  // native pen/touch support
     false, // enable input only mode
     true, // forward_rumble
+    true,  // midi enabled
+    "auto",  // midi_device
   };
 
   sunshine_t sunshine {
@@ -1301,6 +1303,8 @@ namespace config {
     bool_f(vars, "notify_pre_releases", sunshine.notify_pre_releases);
     bool_f(vars, "legacy_ordering", sunshine.legacy_ordering);
     bool_f(vars, "forward_rumble", input.forward_rumble);
+    bool_f(vars, "midi", input.midi);
+    string_f(vars, "midi_device", input.midi_device);
 
     int port = sunshine.port;
     int_between_f(vars, "port"s, port, {1024 + nvhttp::PORT_HTTPS, 65535 - rtsp_stream::RTSP_SETUP_PORT});

@@ -56,7 +56,7 @@ jobs:
           cmake -S /tmp/minhook -B /tmp/minhook/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release
           cmake --build /tmp/minhook/build
-          cp /tmp/minhook/build/libMinHook.a $MINGW_PREFIX/lib/
+          cp /tmp/minhook/build/minhook.x64.a $MINGW_PREFIX/lib/libMinHook.a
           cp /tmp/minhook/include/MinHook.h $MINGW_PREFIX/include/
 
       - name: Pre-download Boost
@@ -94,128 +94,10 @@ jobs:
           path: build/cpack_artifacts/*
           retention-days: 30
 
-  linux:
-    name: Linux
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup CUDA toolkit
-        uses: Jimver/cuda-toolkit@v0.2.30
-        id: cuda-toolkit
-        with:
-          cuda: '12.6.3'
-          method: network
-          sub-packages: '["nvcc", "cudart"]'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake ninja-build pkg-config \
-            libssl-dev libcurl4-openssl-dev \
-            libminiupnpc-dev libopus-dev \
-            libx11-dev libxrandr-dev libxfixes-dev \
-            libdrm-dev libgbm-dev libcap-dev \
-            libva-dev \
-            libwayland-dev wayland-protocols \
-            libevdev-dev \
-            libpulse-dev libnuma-dev \
-            libnotify-dev libayatana-appindicator3-dev \
-            nodejs npm
-
-      - name: Pre-download Boost
-        run: |
-          curl -fL --retry 3 -o /tmp/boost.tar.xz \
-            "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz"
-          mkdir -p /tmp/boost-src
-          tar xf /tmp/boost.tar.xz -C /tmp/boost-src --strip-components=1
-
-      - name: Setup problem matchers
-        run: |
-          echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
-
-      - name: Configure
-        run: |
-          cmake -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DSUNSHINE_ENABLE_TRAY=ON \
-            -DSUNSHINE_ENABLE_CUDA=ON \
-            -DSUNSHINE_ENABLE_DRM=ON \
-            -DSUNSHINE_ENABLE_VAAPI=ON \
-            -DSUNSHINE_ENABLE_WAYLAND=ON \
-            -DSUNSHINE_ENABLE_X11=ON \
-            -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
-
-      - name: Build
-        run: cmake --build build
-
-      - name: Package DEB
-        run: cd build && cpack -G DEB
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: apollo-linux
-          path: build/cpack_artifacts/*
-          retention-days: 30
-
-  macos:
-    name: macOS
-    runs-on: macos-14
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install dependencies
-        run: |
-          brew install \
-            cmake ninja pkg-config \
-            openssl@3 curl miniupnpc opus \
-            node
-
-      - name: Pre-download Boost
-        run: |
-          curl -fL --retry 3 -o /tmp/boost.tar.xz \
-            "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz"
-          mkdir -p /tmp/boost-src
-          tar xf /tmp/boost.tar.xz -C /tmp/boost-src --strip-components=1
-
-      - name: Setup problem matchers
-        run: |
-          echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
-
-      - name: Configure
-        run: |
-          cmake -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DSUNSHINE_ENABLE_TRAY=ON \
-            -DBOOST_USE_STATIC=OFF \
-            -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
-
-      - name: Build
-        run: cmake --build build
-
-      - name: Package DMG
-        run: cd build && cpack -G DragNDrop
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: apollo-macos
-          path: build/cpack_artifacts/*
-          retention-days: 30
-
   release:
     name: Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, linux, macos]
+    needs: [windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

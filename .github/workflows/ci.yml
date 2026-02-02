@@ -21,7 +21,7 @@ env:
 jobs:
   windows:
     name: Windows
-    runs-on: windows-latest
+    runs-on: windows-2022
     defaults:
       run:
         shell: msys2 {0}
@@ -34,30 +34,32 @@ jobs:
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
+          msystem: UCRT64
           update: true
           install: >-
-            git
-            mingw-w64-x86_64-binutils
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-curl
-            mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-miniupnpc
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-nodejs
-            mingw-w64-x86_64-nsis
-            mingw-w64-x86_64-openssl
-            mingw-w64-x86_64-opus
-            mingw-w64-x86_64-pkgconf
+            wget
 
-      - name: Build and install MinHook
+      - name: Install dependencies
         run: |
-          git clone --depth 1 https://github.com/TsudaKageyu/minhook.git /tmp/minhook
-          cmake -S /tmp/minhook -B /tmp/minhook/build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release
-          cmake --build /tmp/minhook/build
-          cp /tmp/minhook/build/minhook.x64.a $MINGW_PREFIX/lib/libMinHook.a
-          cp /tmp/minhook/include/MinHook.h $MINGW_PREFIX/include/
+          dependencies=(
+            "git"
+            "mingw-w64-ucrt-x86_64-boost"
+            "mingw-w64-ucrt-x86_64-cmake"
+            "mingw-w64-ucrt-x86_64-cppwinrt"
+            "mingw-w64-ucrt-x86_64-curl-winssl"
+            "mingw-w64-ucrt-x86_64-gcc"
+            "mingw-w64-ucrt-x86_64-MinHook"
+            "mingw-w64-ucrt-x86_64-miniupnpc"
+            "mingw-w64-ucrt-x86_64-ninja"
+            "mingw-w64-ucrt-x86_64-nlohmann-json"
+            "mingw-w64-ucrt-x86_64-nodejs"
+            "mingw-w64-ucrt-x86_64-nsis"
+            "mingw-w64-ucrt-x86_64-onevpl"
+            "mingw-w64-ucrt-x86_64-openssl"
+            "mingw-w64-ucrt-x86_64-opus"
+            "mingw-w64-ucrt-x86_64-toolchain"
+          )
+          pacman -Syu --noconfirm "${dependencies[@]}"
 
       - name: Pre-download Boost
         run: |
@@ -76,22 +78,26 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DSUNSHINE_ENABLE_TRAY=ON \
+            -DSUNSHINE_ASSETS_DIR=assets \
             -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
 
       - name: Build
         run: cmake --build build
 
-      - name: Package NSIS installer
-        run: cd build && cpack -G NSIS
-
-      - name: Package portable ZIP
-        run: cd build && cpack -G ZIP
+      - name: Package
+        run: |
+          mkdir -p artifacts
+          cd build
+          cpack -G NSIS
+          cpack -G ZIP
+          mv ./cpack_artifacts/Apollo.exe ../artifacts/Apollo-installer.exe
+          mv ./cpack_artifacts/Apollo.zip ../artifacts/Apollo-portable.zip
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: apollo-windows
-          path: build/cpack_artifacts/*
+          path: artifacts/*
           retention-days: 30
 
   release:

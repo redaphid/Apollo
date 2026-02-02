@@ -16,6 +16,7 @@ env:
   BRANCH: ${{ github.head_ref || github.ref_name }}
   BUILD_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
   COMMIT: ${{ github.sha }}
+  BOOST_VERSION: '1.89.0'
 
 jobs:
   windows:
@@ -36,11 +37,11 @@ jobs:
           msystem: MINGW64
           update: true
           install: >-
+            git
             mingw-w64-x86_64-binutils
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-curl
             mingw-w64-x86_64-gcc
-            mingw-w64-x86_64-minhook
             mingw-w64-x86_64-miniupnpc
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-nodejs
@@ -48,6 +49,22 @@ jobs:
             mingw-w64-x86_64-openssl
             mingw-w64-x86_64-opus
             mingw-w64-x86_64-pkgconf
+
+      - name: Build and install MinHook
+        run: |
+          git clone --depth 1 https://github.com/TsudaKageyu/minhook.git /tmp/minhook
+          cmake -S /tmp/minhook -B /tmp/minhook/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build /tmp/minhook/build
+          cp /tmp/minhook/build/libMinHook.a $MINGW_PREFIX/lib/
+          cp /tmp/minhook/include/MinHook.h $MINGW_PREFIX/include/
+
+      - name: Pre-download Boost
+        run: |
+          curl -fL --retry 3 -o /tmp/boost.tar.xz \
+            "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz"
+          mkdir -p /tmp/boost-src
+          tar xf /tmp/boost.tar.xz -C /tmp/boost-src --strip-components=1
 
       - name: Setup problem matchers
         shell: bash
@@ -58,7 +75,8 @@ jobs:
         run: |
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DSUNSHINE_ENABLE_TRAY=ON
+            -DSUNSHINE_ENABLE_TRAY=ON \
+            -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
 
       - name: Build
         run: cmake --build build
@@ -86,7 +104,7 @@ jobs:
           submodules: recursive
 
       - name: Setup CUDA toolkit
-        uses: Jimver/cuda-toolkit@v0.2.19
+        uses: Jimver/cuda-toolkit@v0.2.30
         id: cuda-toolkit
         with:
           cuda: '12.6.3'
@@ -110,6 +128,13 @@ jobs:
             libnotify-dev libayatana-appindicator3-dev \
             nodejs npm
 
+      - name: Pre-download Boost
+        run: |
+          curl -fL --retry 3 -o /tmp/boost.tar.xz \
+            "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz"
+          mkdir -p /tmp/boost-src
+          tar xf /tmp/boost.tar.xz -C /tmp/boost-src --strip-components=1
+
       - name: Setup problem matchers
         run: |
           echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
@@ -123,7 +148,8 @@ jobs:
             -DSUNSHINE_ENABLE_DRM=ON \
             -DSUNSHINE_ENABLE_VAAPI=ON \
             -DSUNSHINE_ENABLE_WAYLAND=ON \
-            -DSUNSHINE_ENABLE_X11=ON
+            -DSUNSHINE_ENABLE_X11=ON \
+            -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
 
       - name: Build
         run: cmake --build build
@@ -151,8 +177,15 @@ jobs:
         run: |
           brew install \
             cmake ninja pkg-config \
-            boost openssl@3 curl miniupnpc opus \
+            openssl@3 curl miniupnpc opus \
             node
+
+      - name: Pre-download Boost
+        run: |
+          curl -fL --retry 3 -o /tmp/boost.tar.xz \
+            "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.xz"
+          mkdir -p /tmp/boost-src
+          tar xf /tmp/boost.tar.xz -C /tmp/boost-src --strip-components=1
 
       - name: Setup problem matchers
         run: |
@@ -163,7 +196,8 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DSUNSHINE_ENABLE_TRAY=ON \
-            -DBOOST_USE_STATIC=OFF
+            -DBOOST_USE_STATIC=OFF \
+            -DFETCHCONTENT_SOURCE_DIR_BOOST=/tmp/boost-src
 
       - name: Build
         run: cmake --build build
